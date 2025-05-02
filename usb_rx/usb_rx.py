@@ -11,7 +11,7 @@ class serial_node(serial.Serial):
         self.crc=crc16.crc16()
         self.s=struct.Struct('=B3f5f5fH')
         self.rx_buffer=ctypes.create_string_buffer(self.s.size)
-        self.rx_data=np.zeros(1, dtype=self.rx_bag)
+        self.rx_data=np.zeros(1,dtype=self.rx_bag)
 
     rx_bag=np.dtype({
         'names':['header','imu_rpy','light','electric','crc_sum'],
@@ -41,17 +41,30 @@ class serial_node(serial.Serial):
     def receive(self):
         while True:
             try:
-                count = self.inWaiting()
-                if count > 0:
-                # if self.inWaiting()==self.s.size:
-                    self.rx_buffer=self.read(count)
+                if self.inWaiting()==self.s.size:
+                    self.rx_buffer=self.read(self.s.size)
                     if self.rx_buffer[0]==0x5A and self.crc.verify(self.rx_buffer,self.s.size):
                         self.unpacked_data = self.s.unpack_from(self.rx_buffer,0)
                         self.rx_data['header']=self.unpacked_data[0]
-                        self.rx_data['imu_rpy']=self.unpacked_data[1]
-                        self.rx_data['light']=self.unpacked_data[2]
-                        self.rx_data['electric']=self.unpacked_data[3]
-                        self.rx_data['crc_sum']=self.unpacked_data[4]
+                        self.rx_data['imu_rpy'][0]=[
+                            float(self.unpacked_data[1]),
+                            float(self.unpacked_data[2]),
+                            float(self.unpacked_data[3])]
+                        self.rx_data['light'][0]=[
+                            float(self.unpacked_data[4]),
+                            float(self.unpacked_data[5]),
+                            float(self.unpacked_data[6]),
+                            float(self.unpacked_data[7]),
+                            float(self.unpacked_data[8]),
+                        ]
+                        self.rx_data['electric'][0]=[
+                            float(self.unpacked_data[9]),
+                            float(self.unpacked_data[10]),
+                            float(self.unpacked_data[11]),
+                            float(self.unpacked_data[12]),
+                            float(self.unpacked_data[13]),
+                        ]
+                        self.rx_data['crc_sum']=self.unpacked_data[14]
                         print(self.rx_data)
 
                 else:
@@ -65,7 +78,7 @@ def main():
     node=serial_node()
     node.serial_open()
 
-    executor_thread = Thread(target=node.receive, daemon=True, args=())
+    executor_thread = Thread(target=node.receive, daemon=True)
     executor_thread.start()
     executor_thread.join()
 
