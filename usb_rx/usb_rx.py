@@ -4,14 +4,26 @@ import struct
 import numpy as np
 from threading import Thread
 import crc16
+from openpyxl import Workbook
+import os
 
 class serial_node(serial.Serial):
     def __init__(self):
         super().__init__('COM6',115200)
         self.crc=crc16.crc16()
+
         self.s=struct.Struct('=B3f5f5fH')
         self.rx_buffer=ctypes.create_string_buffer(self.s.size)
         self.rx_data=np.zeros(1,dtype=self.rx_bag)
+
+        self.wb=Workbook()
+        self.ws=self.wb.active
+        self.ws.title = "Sheet1"
+        self.ws.append(['imu_r','imu_p','imu_y',
+                        'light1','light2','light3','light4','light5',
+                        'electric1','electric2','electric3','electric4','electric5'])
+
+        self.excel_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data.xlsx")
 
     rx_bag=np.dtype({
         'names':['header','imu_rpy','light','electric','crc_sum'],
@@ -65,14 +77,16 @@ class serial_node(serial.Serial):
                             float(self.unpacked_data[13]),
                         ]
                         self.rx_data['crc_sum']=self.unpacked_data[14]
+                        self.ws.append((list)(np.hstack((self.rx_data['imu_rpy'][0],self.rx_data['light'][0],self.rx_data['electric'][0]))))
+                        self.wb.save(self.excel_path)
                         print(self.rx_data)
 
                 else:
                     None
             except serial.SerialException:
                 None
-            except:
-                self.serial_restart()
+            # except:
+            #     self.serial_restart()
 
 def main():
     node=serial_node()
