@@ -77,7 +77,9 @@ class serial_node(serial.Serial):
                             float(self.unpacked_data[13]),
                         ]
                         self.rx_data['crc_sum']=self.unpacked_data[14]
-                        self.ws.append((list)(np.hstack((self.rx_data['imu_rpy'][0],self.rx_data['light'][0],self.rx_data['electric'][0]))))
+                        self.ws.append((list)(np.hstack((self.rx_data['imu_rpy'][0],
+                                                         self.rx_data['light'][0],
+                                                         self.rx_data['electric'][0]))))
                         self.wb.save(self.excel_path)
                         print(self.rx_data)
 
@@ -85,8 +87,8 @@ class serial_node(serial.Serial):
                     None
             except serial.SerialException:
                 None
-            # except:
-            #     self.serial_restart()
+            except:
+                self.serial_restart()
 
 def main():
     node=serial_node()
